@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2015 Sasha Kovar
 
-;; Version: 0.5
+;; Version: 0.6
 ;; Author: Sasha Kovar <sasha-emacs@arcocene.org>
 ;; Url: http://github.com/abend/highlight-keywords-mode
 
@@ -56,7 +56,7 @@ will be highlighted regardless of context."
   "Return true if POS is within a region within which keywords
 should be highlighted."
   (memq (get-char-property pos 'face)
-	highlight-keywords-valid-contexts))
+        highlight-keywords-valid-contexts))
 
 (defvar highlight-keywords-found-keyword-hook '()
   "Hooks run after a keyword has been highlighted.
@@ -68,34 +68,30 @@ Each hook is run with the keyword's overlay as its argument.")
   "The face used to show keywords."
   :group 'highlight-keywords)
 
-(defun highlight-keywords-fontify (beg end)
-  (highlight-keywords-unfontify beg end)
-  (let ((regexp (regexp-opt fixme-words))
-        (case-fold-search highlight-keywords-case-fold))
-    (save-excursion
-      (goto-char beg)
-      (while (search-forward-regexp regexp end t)
-        (when (highlight-keywords-in-valid-context (match-beginning 0))
-          (let ((keyword (make-overlay (match-beginning 0) (match-end 0))))
-            (overlay-put keyword 'type 'highlight-keywords)
-            (overlay-put keyword 'evaporate t)
-            (overlay-put keyword 'face 'highlight-keywords-face)
-            (run-hook-with-args 'found-keywords-hook keyword)))))))
+(defvar highlight-keywords-search-regexp
+  (regexp-opt highlight-keywords-words 'words)
+  "Regexp constructed from highlight-keywords-words")
 
-(defun highlight-keywords-unfontify (beg end)
-  (mapc #'(lambda (o)
-            (when (eq (overlay-get o 'type) 'highlight-keywords)
-              (delete-overlay o)))
-        (overlays-in beg end)))
+(defun highlight-keywords-find-keyword (limit)
+  (let ((match-data nil))
+    (save-match-data
+      (while (and (null match-data)
+                  (re-search-forward highlight-keywords-search-regexp limit t))
+        (if (and (highlight-keywords-in-valid-context (match-beginning 0))
+                 (highlight-keywords-in-valid-context (match-end 0)))
+            (setq match-data (match-data)))))
+    (when match-data
+      (set-match-data match-data)
+      (goto-char (match-end 0))
+      t)))
 
 (define-minor-mode highlight-keywords-mode
   "Highlight keywords like FIXME, TODO, etc. in parts of a buffer."
   :lighter " HK"
-  (cond ((not highlight-keywords-mode)
-         (jit-lock-unregister 'highlight-keywords-fontify)
-         (highlight-keywords-unfontify (point-min) (point-max)))
-        (t (highlight-keywords-fontify (point-min) (point-max))
-           (jit-lock-register 'highlight-keywords-fontify))))
+  (let ((def '((highlight-keywords-find-keyword (0 'highlight-keywords-face t)))))
+    (if highlight-keywords-mode
+        (font-lock-add-keywords nil def)
+        (font-lock-remove-keywords nil def))))
 
 (provide 'highlight-keywords-mode)
 ;;; highlight-keywords-mode.el ends here
