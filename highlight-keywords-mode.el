@@ -23,6 +23,15 @@
 ;; highlight-keywords-mode is like many other "fixme" style
 ;; highlighting packages, but can restrict highlighting to within
 ;; certain contexts, such as comments and doc strings.
+;;
+;; To enable this minor mode, put something like the following in your
+;; init file:
+;;
+;; For a single mode:
+;;      (add-hook 'emacs-lisp-mode-hook 'turn-on-highlight-keywords-mode)
+;;
+;; For all programming modes:
+;;      (add-hook 'prog-mode-hook 'turn-on-highlight-keywords-mode)
 
 ;;; Credits:
 ;; Based on the work of:
@@ -85,6 +94,7 @@ Each hook is run with the keyword's overlay as its argument.")
       (goto-char (match-end 0))
       t)))
 
+;;;###autoload
 (define-minor-mode highlight-keywords-mode
   "Highlight keywords like FIXME, TODO, etc. in parts of a buffer."
   :lighter " HK"
@@ -92,6 +102,13 @@ Each hook is run with the keyword's overlay as its argument.")
     (if highlight-keywords-mode
         (font-lock-add-keywords nil def)
         (font-lock-remove-keywords nil def))))
+
+;;;###autoload
+(defun turn-on-highlight-keywords-mode ()
+  "Unequivocally turn on highlight keywords mode
+(see command `highlight-keywords-mode')."
+  (interactive)
+  (highlight-keywords-mode 1))
 
 (provide 'highlight-keywords-mode)
 ;;; highlight-keywords-mode.el ends here
